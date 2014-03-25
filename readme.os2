@@ -1,0 +1,16 @@
+mkhybrid v1.12a4.7 - make ISO9660/HFS shared hybrid CD volume 
+
+source  : James Pearson (j.pearson@ge.ucl.ac.uk)
+          http://www.ge.ucl.ac.uk/~jcpearso/mkhybrid.html.
+os2 port: Bohumir Horeni (horeni@login.cz)
+          Tested only ISO9660 and Joliet format,
+          emx runtime requiered
+
+To install copy programs from .\bin in the PATH.
+Read .\doc\*.htm files.
+Run _sample.cmd in directory ./sample.
+
+rebuild(emx09c):
+  cd src
+  _ptchsrc.cmd
+  _make.cmd

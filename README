@@ -1,0 +1,394 @@
+
+	mkhybrid v1.12a4.7 - make ISO9660/HFS shared hybrid CD volume
+
+HFS hybrid code Copyright (C) James Pearson 1997, 1998
+libhfs code Copyright (C) 1996, 1997 Robert Leslie
+libfile code Copyright (c) Ian F. Darwin 1986, 1987, 1989,
+	1990, 1991, 1992, 1994, 1995
+mkisofs code Copyright 1993 Yggdrasil Computing, Incorporated
+
+WARNING - this is Alpha release code - please use with care!
+If you find a bug, please report it to the address given below.
+
+This code may not work as expected. If you need to use a stable
+release, then you should be using version 1.11.3
+
+Also, this code is based on a Beta release of mkisofs, so there may be
+problems unrelated to my additions. However, I have found mkisofs
+v1.12b4 to be very stable.
+
+If you want to use/test this code, then you should have already used
+mkhybrid v1.11 (or earlier) and have read its "README.mkhybrid" or
+http://www.ge.ucl.ac.uk/~jcpearso/mkhybrid.html.
+
+The man page (mkhybrid.8, or mkhybrid_man.html) should alos be read.
+
+Changes since mkhybrid v1.11:
+
+ - Code based on mkisofs v1.12 - since this now supports Joliet, the
+   extras in mkhybrid are just the HFS hybrid and Apple ISO9660 extensions.
+   (mkhybrid now uses mkisofs' Joliet code, NOT my own implementation)
+
+ - Now (partially) supports more Apple/Unix file formats. (see below)
+
+ - Command line options have changed slightly - mkisofs v1.12 now
+   supports "long" options, so I've added long options as well (see
+   below)
+
+ - Changes to the way HFS filename (and possibly ISO9660, Joliet and RockRidge)
+   are handled (see below)
+
+ - Can now handle multiple hard linked source files with the -hfs option
+   (multiple hard linked source files are handled as separate files)
+
+ - Can now handle case insensitive HFS file/folder names that are the
+   same - one or more '_' characters are added to one or more of the
+   filenames. HFS file/directory names that share the first 31 characters
+   have '_N' (N == decimal number) substituted for the last few characters
+   to generate unique names.
+
+ - Can now generate bootable HFS CDs (see README.hfs_boot for details)
+
+ - Can now use a "magic" file to set CREATOR/TYPE from the contents of
+   a file (see README.hfs_magic for details)
+
+ - Can now hide files/directories from the HFS part of the CD.
+
+ - Can now hide files/directories from the ISO9660 and/or Joliet part
+   of the CD (see below).
+
+Also see "ChangeLog.mkhybrid" for any minor changes/bug fixes
+
+
+To make/install, type "./configure", make any changes to the Makefile
+and type "make"
+
+This has been tested with gcc on SunOS 4.1.3 (see below), gcc on Linux
+(Redhat v5.1) and cc on IRIX 5.3/6.2
+
+If you are using SunOS 4.1.[34], then you need the following patches
+to read CDs with associated files:
+
+SunOS 4.1.3:		Patch 101832-05
+SunOS 4.1.3_U1:		Patch 101833-02
+SunOS 4.1.4:		Patch 102583-02
+
+
+Apple/Unix file formats.
+
+v1.11 supported only the CAP AUFS format, or used a mapping file to map
+filename extensions to various Apple CREATOR/TYPES. I've had several
+requests to support other Apple/Unix file formats, so I've modified the
+code to make it a bit easier to add other formats.
+
+A bit of background info: Mac files have two parts called the Data and
+Resource fork. Either may be empty. Unix (and many other OSs) can only
+cope with files having one part (or fork). To add to this, Mac files
+have a number of attributes associated with them - probably the most
+important are the TYPE and CREATOR. Again Unix has no concept of these
+types of attributes.
+
+Therefore to store a Mac file on a Unix filesystem, a way has to be
+found to cope with the two forks and the extra attributes (which I'll
+refer to as finder info). Unfortunately, it seems that every software
+package that stores Mac files on Unix has chosen a completely different
+storage method ...
+
+The Apple/Unix formats that mkhybrid now (partially) supports are:
+
+ ... I only have detailed knowledge on the AUFS format, the other
+format implementations are taken from code I've come across or information
+I've been sent in the past. If you have or know where I can get hold of
+more detailed information on these other formats, then please let me know.
+
+
+CAP AUFS format:
+
+	Data fork stored in file. Resource fork in subdirectory
+	.resource with same filename as data fork. Finder info
+	in .finderinfo subdirectory with same filename.
+
+	Already supported in v1.11
+
+AppleDouble/Netatalk
+
+	Data fork stored in file. Resource fork stored in file with
+	same name prefixed with "%". Finder info also stored in same
+	"%" file. Netatalk uses the same format, but the resource
+	fork/finderinfo stored in subdirectory .AppleDouble with same
+	name as data fork.
+
+	Code based on cvtcap.c supplied with CAP and info in megatron.c
+	supplied with netatalk. Needs testing and info on how Mac folder
+	names are stored and file dates.
+
+AppleSingle
+
+	Data structures similar to above, except both forks and finder
+	info are stored in one file.
+
+Helios EtherShare
+
+	Data fork stored in file. Resource fork and finder info together
+	in subdirectory .rsrc with same filename as data fork. Based
+	on code from Jens-Uwe Mager (jum@helios.de).
+
+IPT UShare
+
+	Very similar to the EtherShare format, but the finder info
+	is stored slighly differently. Information from Phil Sylvester
+	<psylvstr@interaccess.com>
+
+MacBinary
+
+	Both forks and finder info stored in one file. Code based
+	on various conversion routines available with CAP. Not sure
+	how the "flags" fields map to the HFS finder flags.
+
+Apple PC Exchange
+
+	Used by Macs to store Apple files on DOS (FAT) disks.
+	Data fork stored in file. Resource fork in subdirectory
+	resource.frk (or RESOURCE.FRK). Finder info as one record
+	in file finder.dat (or FINDER.DAT). Separate finder.dat for
+	each data fork directory.
+
+	Based on information from Mark Weinstein <mrwesq@earthlink.net>
+	and by using "od" on the finder.dat file - as created by PC
+	Exchange v2.1.  Things might have changed with v2.2.
+
+	Note: files must be accessed directly from the DOS media as
+	mkhybrid needs to find out the native FAT cluster size.
+	Therefore this may not work if the files are copied to other
+	disks before running mkhybrid.
+
+SGI/XINET
+	Used by SGI machines when they mount HFS disks. Data fork stored
+	in file. Resource fork in subdirectory .HSResource with same
+	name. Finder info as one record in file .HSancillary. Separate
+	.HSancillary for each data fork directory. XINET OEM'ed the format
+	to SGI.
+
+	Based on using "od" on the .HSancillary file. Really need
+	detailed description of the .HSancillary file.
+
+
+Command line options:
+
+	Short			Long
+
+	-h			-hfs
+	-H mapping_file		-map mapping_file
+	-g			-apple
+				-probe
+				-mac-name
+				-no-mac-files
+				-boot-hfs-file driver_file
+				-magic magic_file
+				-log-file log_file
+				-hide
+				-hide-joliet
+				-hide-hfs
+				-no-desktop
+				--cap
+				--netatalk
+				--double
+				--ethershare
+				--ushare
+				--exchange
+				--sgi
+				--xinet
+				--macbin
+				--single
+
+   The "-G mapping_file" is no longer used. 
+
+-log-file re-directs all warning, error and informational messages to
+log_file instead of the stderr.
+
+-hfs (or -h) creates a HFS hybrid CD.
+
+-apple (or -g) adds the Apple extensions to the ISO9660 CD
+
+-hfs and -apple can not be used together.
+
+-boot-hfs-file installs a driver that *may* make the CD Mac bootable
+(see README.hfs_boot for details).
+
+-mac-name use HFS name as starting point for ISO9660, Joliet and
+RockRidge file names - instead of the Unix name.
+
+-no-desktop does not create (empty) Desktop files. New HFS Desktop files
+will be created when the CD is used on a Macintosh (and stored in the
+System Folder).  By default, empty Desktop files are added to the HFS volume.
+
+-no-mac-files disables searching for Apple/Unix files. This will speed up
+processing if there are none of these files in the source directory
+trees - suitable when just the mapping file is being used for CREATOR/TYPE
+
+If your source directory only has one (or a few) of the possible Apple/Unix
+file types, then these can be selected using one or more of the "double dash"
+options listed above. i.e. if you just have CAP and NETATALK files, then use
+--cap and --netatalk. All the other Apple/Unix file types will be ignored.
+Any of these options disable the -no-mac-files and -probe options.
+
+the -map mapping_file (or -H mapping_file) can be used with both -hfs
+and -apple to map filename extensions to CREATOR/TYPE. If -map is given
+with neither -hfs or -apple, then -hfs is implied.
+
+The -magic magic_file can be used to use the "magic number" of a file
+(usually the first few bytes of a file) to set the CREATOR/TYPE. See
+README.hfs_magic for details and usage.
+
+When -hfs or -apple is used, mkhybrid will attempt to work out automatically
+what type of HFS encoding (from the list above) is used with each file -
+unless one or more of the "double dash" options is given. If it can't find
+out, then it assumes it's an ordinary Unix file and will attempt to map the
+filename extension (if -map is used).
+
+However, the only way to check for MacBinary and AppleSingle files is
+to open them and read them. Therefore, if you want to use MacBinary or
+AppleSingle, then you need to give the "-probe" option (-probe implies
+-hfs if not otherwise given). This saves opening and searching every
+file if no MacBinary and/or AppleSingle files exist. Or you could use the
+relevant "double dash" options above.
+
+The format of the mapping file is the same afpfile format as used by
+aufs(1). This file has five columns for the extension, file translation,
+CREATOR, TYPE and Comment. Lines starting with the '#' character are comment
+lines and are ignored. An example file would be like:
+
+# Example filename mapping file
+#
+# EXTN   XLate   CREATOR   TYPE     Comment
+.tif     Raw     '8BIM'    'TIFF'   "Photoshop TIFF image"
+.hqx     Ascii   'BnHq'    'TEXT'   "BinHex file"
+.doc     Raw     'MSWD'    'WDBN'   "Word file"
+.mov     Raw     'TVOD'    'MooV'   "QuickTime Movie"
+*        Ascii   'ttxt'    'TEXT'   "Text file"
+
+Where:
+
+        The first column (EXTN) defines the Unix filename
+        extension to be mapped. The default mapping for any
+        filename extension that doesn't match is defined with
+        the "*" character.
+
+        The Xlate column defines the type of text translation
+        between the Unix and Macintosh file - it is ignored by
+        mkhybrid, but is kept to be compatible with aufs(1).
+	Although mkhybrid does not alter the contents of a file,
+	if a binary file has it's TYPE set as 'TEXT', it may
+	be read incorrectly on a Macintosh. Therefore a better
+	choice for the default TYPE may be '????'
+
+        The CREATOR and TYPE keywords must be 4 characters long
+        and enclosed in single quotes.
+
+        The comment field is enclosed in double quotes - it is
+        ignored by mkhybrid, but is kept to be compatible with
+        aufs.
+
+
+Filenames (HFS/ISO9660/Joliet/RockRidge):
+
+Where possible, the HFS filename that is stored with an Apple/Unix file
+is used for the HFS part of the CD. However, not all the Apple/Unix
+encodings store the HFS filename with the finderinfo. In these cases,
+the Unix filename is used - with escaped special characters. Special
+characters include '/' and characters with codes over 127.
+
+Aufs escapes these characters by using ":" followed by the character code
+as two hex digits. Netatalk (I believe) has a similar scheme, but uses
+"%" instead of a ":". 
+
+If mkhybrid can't find an HFS filename, then it uses the Unix name, with
+any %xx or :xx characters (xx == two hex digits) converted to a single
+character code. If "xx" are not hex digits ([0-9a-fA-F]), then they are
+left alone - although any remaining ":" is converted to "%" as colon
+is the HFS directory separator. Care must be taken, as an ordinary Unix
+file with %xx or :xx will also be converted. e.g.
+
+This:2fFile		converted to This/File
+
+This:File		converted to This%File
+
+If an HFS filename exists for a file, then mkhybrid can now use this as
+the starting point for the ISO9660, Joliet and RockRidge filenames using
+the -mac-name option. e.g.
+
+If a MacBinary file is stored as "someimage.gif.bin" on the Unix
+filesystem, but contains a HFS file called "someimage.gif", then this is
+the name that would appear on the HFS part of the CD. However, as
+mkisofs uses the Unix name as the starting point for the other names, then
+the ISO9660 name will probably be "SOMEIMAG.BIN" and the Joliet/RockRidge
+as "someimage.gif.bin" - although, the actual data (in this case) is a GIF
+image.
+
+Therefore, using the -mac-name option, the HFS name will be used, so that the
+ISO9660 name will probably be "SOMEIMAG.GIF" and the Joliet/RockRidge
+"someimage.gif" This really comes into its own when using PC Exchange.
+
+However, care must be taken as the codes for special HFS characters are
+not the same Win95/NT (Joliet/Unicode) or Unix (RockRidge/Latin)
+characters codes.
+
+Using -mac-name will not currently work with the -T option - the Unix
+name will be used in the table file, not the Mac name.
+
+The existing mkisofs code will filter out any illegal characters for the
+ISO9660 and Joliet filenames, but as mkisofs expects to be dealing
+directly with Unix names, it leaves the RockRidge names as is -
+but as '/' is a legal HFS filename character, this is coverted to a '_'.
+
+If the Apple extensions are used, then only the ISO9660 filenames will
+appear on the Mac. However, as the Macintosh ISO9660 drivers can use
+"Level 2" filenames, then you can use the "-l" option without problems on
+a Macintosh - still take care over the names, for example "this.file.name"
+will be converted to "THIS.FILE" i.e. only have one ".", also filename
+"abcdefgh" will be seen as "ABCDEFGH", but "abcdefghi" will be seen as
+"ABCDEFGHI." i.e.  with a "." at the end - don't know if this is a Mac
+problem or mkisofs/mkhybrid problem. All filenames will be in uppercase
+when viewed on a Mac. Of course, DOS/Win3.X machines will not be able
+to see Level 2 filenames...
+
+
+The -hide, -hide-joliet and -hide-hfs can be used together to hide a
+number of files or directories from the ISO9660/RockRidge, Joliet or HFS
+CD. All the files will be written to the CD, but those selected will be
+hidden from their respective CD directory trees.
+
+The following example puts different files on the CD that all have
+the name README, but have different contents when seen as a
+ISO9660/RockRidge Joliet or HFS CD.
+
+Current directory contains
+
+% ls -F
+README.hfs     README.joliet  README.unix    cd_dir/
+
+The following command puts the contents of the directory "cd_dir" on the
+CD along with the three README files - but only one will be seen from
+each of the three filesystems:
+
+% mkhybrid -o cd.raw -hfs -J -r \
+        -hide README.hfs -hide README.joliet \
+        -hide-joliet README.hfs -hide-joliet README.unix \
+        -hide-hfs README.joliet -hide-hfs README.unix \
+        README=README.hfs README=README.joliet README=README.unix \
+        cd_dir
+
+i.e. the file README.hfs will be seen as README on the HFS CD and the
+other two README files will be hidden. Similarly for the Joliet and
+ISO9660/RockRidge CD.
+
+There are probably all sorts of stange results possible with
+combinations of the hide options ...
+
+
+Any comments, bug reports/fixes to the address below.
+
+Please state the version, platform and command line used when submitting
+a bug report - the output from "-log-file -v" would help.
+
+James Pearson (j.pearson@ge.ucl.ac.uk)

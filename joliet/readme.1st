@@ -1,0 +1,74 @@
+OS/2 CD_ROM file system driver - Read Me Information
+----------------------------------------------------
+                    2/28/97
+
+CONTENTS:
+
+  README.1ST - this file.
+  CDFS.IFS   - the CD-ROM file system driver.
+
+DESCRIPTION:
+
+ This CD-ROM File System Driver (CDFS.IFS) adds support for mixed-case
+ file names longer than 32 characters.  The reason for these changes
+ to the CDFS is because some of the JAVA toolkit CD-ROMs have been
+ mastered using names greater than 32 characters in length and using
+ mixed case names.  The CD-ROM included in the "Hooked on JAVA"
+ publication is one such example.
+
+ In addition, support has been added for the new Microsoft Joliet
+ CD-ROM format.  (see "http://www.ms4music.com/devl/dvjoliet.htm" for
+ more details.)  Joliet is a Microsoft extension to the ISO 9660
+ CD-ROM file system which adds Unicode and longname support.  Joliet
+ support is Presently both Windows 95 and Windows NT 4.0 supports the
+ Joliet format.  To enable the Joliet support, you must use the '/w'
+ option in CONFIG.SYS to enable the Joilet support.  Since many of the
+ CD-R code is starting to ship with support for MS Joliet, this new
+ format should become more and more common (at least for CDROMs
+ created to be used on Windows).  However, I need to point out that
+ this is a new format.  I only had the Microscoft specification and
+ CD-ROM created from a demo CD-R program to develope and test this code.
+
+
+TO INSTALL:
+
+1. Change to the d:\OS2\BOOT subdirectory, where d:  is the drive
+ letter where you installed OS/2.
+
+2.  Rename CDFS.IFS to CDFS.ORG.
+
+3.  Copy the new CDFS.IFS into the d:\OS2\BOOT subdirectory.
+
+4.  Then if you Joliet support is desired:
+
+    Change to d:\ and type TEDIT CONFIG.SYS.  Find the
+    IFS=C:\OS2\BOOT\CDFS.IFS  statement and add '/W' to the end of the
+    statement.
+
+5. Reboot system.
+
+PARAMETERS:
+
+     /W     - Enable Joliet Unicode name support
+     /Q     - Disable all signon messages
+     /V     - Enable all signon messages
+  (default) - Display Beta driver message only
+
+
+Revisions 2/28/97
+
+ - Modified CDFS.IFS to work with Aptiva Recovery CD-ROM when '/w' option
+   was used.  This failed because this CD-ROM did not contain a valid
+   Volume Descriptor Set Terminator as required by ISO 9660 Spec.
+
+ - Fixed problem where CDFS did not support mixed case names when using
+   the REXX SysFileTree function.
+
+ - Fixed problem where under some stress conditions, CDFS would return
+   Path not found when the path was really OK.  This condition could be
+   easily reproduced by running the FixPak installation program.
+
+ - Modifed CDFS to recognize Joilet UCS-2 Levels 2 and 3 escape sequences.
+   (The CDFS code continues to only sypport the Latin 1 character set.)
+
+

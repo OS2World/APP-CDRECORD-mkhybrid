@@ -1,0 +1,20 @@
+## Makefile for mkhybrid/os2.
+
+CC = gcc
+CFLAGS=-g -O2 -I. -s
+EXESFX=.exe
+
+#all: dump$(EXESFX) isodump$(EXESFX) isovfy$(EXESFX) isoinfo$(EXESFX)
+all:  isovfy$(EXESFX) isoinfo$(EXESFX)
+
+dump$(EXESFX): ../config.h dump.c
+	${CC} $(CFLAGS) -o dump$(EXESFX) dump.c
+isodump$(EXESFX): ../config.h isodump.c
+	${CC} $(CFLAGS) -o isodump$(EXESFX) isodump.c
+isovfy$(EXESFX): isovfy.c
+	${CC} $(CFLAGS) -o isovfy$(EXESFX) isovfy.c
+isoinfo$(EXESFX): ../config.h isoinfo.c
+	${CC} $(CFLAGS) -o isoinfo$(EXESFX) isoinfo.c
+
+clean:
+	rm -f dump$(EXESFX) isodump$(EXESFX) isovfy$(EXESFX) isoinfo$(EXESFX)
